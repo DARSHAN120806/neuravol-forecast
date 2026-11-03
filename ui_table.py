@@ -10,10 +10,10 @@ import pandas as pd
 
 CSS = """
 .nv-table-wrap { overflow-x: auto; margin: 4px 0 14px 0; border: 1px solid #E6E8F2; border-radius: 12px; background: #fff; }
-.nv-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
-.nv-table th { text-align: right; font-weight: 600; color: #5E5C78; background: #F7F8FC; padding: 8px 12px;
-               border-bottom: 1px solid #E6E8F2; white-space: nowrap; }
-.nv-table td { text-align: right; padding: 7px 12px; border-bottom: 1px solid #F0F1F7; color: #1E2235; white-space: nowrap; }
+.nv-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+.nv-table th { text-align: right; font-weight: 600; color: #5E5C78; background: #F7F8FC; padding: 8px 10px;
+               border-bottom: 1px solid #E6E8F2; white-space: normal; vertical-align: bottom; line-height: 1.25; }
+.nv-table td { text-align: right; padding: 7px 10px; border-bottom: 1px solid #F0F1F7; color: #1E2235; white-space: nowrap; }
 .nv-table th:first-child, .nv-table td:first-child { text-align: left; }
 .nv-table tr:last-child td { border-bottom: none; }
 .nv-table td.hl { background: #E6F6F3; color: #0B7A6E; font-weight: 600; }
