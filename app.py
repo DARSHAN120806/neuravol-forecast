@@ -641,5 +641,5 @@ _line = " | ".join(f"{n} {t:.2f}s" for n, t in _MARKS)
 print(f"[timing] page={st.session_state.get('page')} {_line}", flush=True)
 if _dbg:
     import sys, plotly, scipy
-    st.code(f"python {sys.version.split()[0]} streamlit {st.__version__} pandas {pd.__version__} numpy {np.__version__} "
+    st.text(f"python {sys.version.split()[0]} streamlit {st.__version__} pandas {pd.__version__} numpy {np.__version__} "
             f"plotly {getattr(plotly, '__version__', '?')} scipy {scipy.__version__}\n" + "\n".join(f"{t:7.2f}s  {n}" for n, t in _MARKS))

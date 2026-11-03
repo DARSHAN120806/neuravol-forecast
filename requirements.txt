@@ -1,5 +1,5 @@
 # Dashboard (this is what Streamlit Community Cloud installs)
-streamlit>=1.35
+streamlit==1.50.0  # 1.66.x hangs serving its static JS on Community Cloud
 plotly>=5.20
 pandas>=2.0
 numpy>=1.26
