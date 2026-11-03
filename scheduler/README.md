@@ -35,3 +35,19 @@ fine-grained personal access token limited to this repository.
 3. The Execute Command node only exists in self-hosted n8n, and recent versions disable it by default; enable it via
    the `NODES_EXCLUDE` setting if it is missing.
 4. Optional: add a Telegram or email node after it to get a message with the day's forecast.
+
+## Live bid/ask collector (cleaner data)
+
+`collector/collect_chain.py` saves the full NIFTY option chain with bid and ask prices every 15 minutes during market
+hours, using the free **Upstox Analytics Token** (read-only, valid 1 year, no daily login):
+
+1. Open https://account.upstox.com/developer/apps, create an app, go to the **Analytics** tab, click **Generate Token**.
+2. Save the token in `secrets/upstox_token.txt` (git-ignored; never commit it) and test:
+   `python collector/collect_chain.py --once`
+3. Schedule it:
+   - Windows: double-click `scheduler/setup_collector_task.bat` once (starts 09:10 on weekdays).
+   - VPS cron: `10 9 * * 1-5 cd /home/ubuntu/neuravol-forecast && .venv/bin/python collector/collect_chain.py --loop --every 15 >> logs/collector.log 2>&1`
+     (with `CRON_TZ=Asia/Kolkata`; copy the token file to the server).
+
+Every evening the daily update also runs `collector/build_mid_surface.py`, which turns the 15:25 snapshot into a
+surface built from mid prices in `data/surfaces_mid/`. After 2-3 months of these, retrain the model on them.
