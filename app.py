@@ -3,6 +3,15 @@
     pip install -r requirements.txt
     streamlit run app.py
 """
+import time as _time
+_T0 = _time.perf_counter()
+_MARKS = []
+
+
+def _mark(name):
+    _MARKS.append((name, _time.perf_counter() - _T0))
+
+
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
@@ -10,6 +19,13 @@ import streamlit as st
 
 import dashboard_data as dd
 from src.pricing import black76
+_mark('imports')
+
+
+def _chart(fig, **k):
+    _mark('chart build')
+    st.plotly_chart(fig, **k)
+    _mark('chart sent')
 
 st.set_page_config(page_title="NeuraVol · NIFTY volatility intelligence", page_icon="📈", layout="wide")
 
@@ -119,6 +135,7 @@ def get_data():
 
 
 d = get_data()
+_mark('data')
 K0 = dd.kpis(d, 5)
 
 
@@ -202,6 +219,7 @@ with st.sidebar:
     html(f'<div class="nv-section">Data</div><div class="nv-note"><b>Updated {d.dates[-1]:%d %b %Y}</b><br>'
          f'Source: NSE F&amp;O end-of-day data, refreshed every trading evening.<br><br>{DISCLAIMER}</div>')
 
+_mark('sidebar')
 page = st.session_state["page"]
 h = st.session_state["h"]
 HL = H_NAMES[h]
@@ -309,7 +327,7 @@ if page == "Overview":
     fig.add_hline(y=0, line_color=LINE, line_width=1)
     fig.update_layout(title=f"P&L per unit at expiry, NIFTY at {ST:,.0f}", height=420, xaxis_title="NIFTY change at expiry (%)",
                       yaxis_title="₹ per unit", legend=dict(orientation="h", y=-0.25), **LAYOUT)
-    st.plotly_chart(fig)
+    _chart(fig)
     html(kpi_row([kpi(n, f"₹{v:+,.0f}", "per unit at this level", TEAL if v >= 0 else CORAL) for n, v in rows_now[:3]]))
     html(kpi_row([kpi(n, f"₹{v:+,.0f}", "per unit at this level", TEAL if v >= 0 else CORAL) for n, v in rows_now[3:]]))
     html(f'<div class="nv-notice"><b>Analysis, not advice.</b> The right contract depends on your market view, budget and '
@@ -334,13 +352,13 @@ elif page == "Volatility surface":
     with left:
         view = choice("View", ["Heatmap", "3D"], "Heatmap", key="view")
         if view == "Heatmap":
-            st.plotly_chart(heatmap(dd.grid_frame(d, today, mask), "Implied volatility today (%)", SEQ))
+            _chart(heatmap(dd.grid_frame(d, today, mask), "Implied volatility today (%)", SEQ))
         else:
             fig = go.Figure(go.Surface(z=today * 100, x=d.mon * 100, y=d.tenors, colorscale=SEQ,
                                        colorbar=dict(thickness=10, outlinewidth=0)))
             fig.update_layout(title="Implied volatility today (%)", height=440,
                               scene=dict(xaxis_title="strike vs forward %", yaxis_title="days", zaxis_title="IV %"), **LAYOUT)
-            st.plotly_chart(fig)
+            _chart(fig)
     with right:
         c1, c2 = st.columns(2)
         with c1:
@@ -364,10 +382,10 @@ elif page == "Volatility surface":
                                  line=dict(color=CORAL, width=3, dash="dash")))
         fig.update_layout(title=f"{tenor}-day volatility smile", height=400, xaxis_title="strike vs forward (%)",
                           yaxis_title="IV (%)", legend=dict(orientation="h", y=-0.25), hovermode="x unified", **LAYOUT)
-        st.plotly_chart(fig)
+        _chart(fig)
     delta = dd.forecast_grid(d, h) - today
     lim = max(0.5, float(np.nanmax(np.abs(delta * 100))))
-    st.plotly_chart(heatmap(dd.grid_frame(d, delta), f"Expected change over {HL} (vol points · pink = rise, blue = fall)",
+    _chart(heatmap(dd.grid_frame(d, delta), f"Expected change over {HL} (vol points · pink = rise, blue = fall)",
                             DIV, zmid=0, fmt=".2f", zmin=-lim, zmax=lim, height=380))
     nn_ok = d.forecast["iv_nn"].notna().any() if "iv_nn" in d.forecast else True
     method = ("NeuraVol model (neural network combined with a factor model)" if nn_ok else
@@ -431,7 +449,7 @@ elif page == "Strike explorer":
     fig.add_hline(y=0, line_color=LINE, line_width=1)
     fig.update_layout(title=f"Profit or loss per unit, bought at ₹{p0:,.2f}", height=420, xaxis_title="NIFTY move (%)",
                       yaxis_title="₹ per unit", hovermode="x unified", legend=dict(orientation="h", y=-0.25), **LAYOUT)
-    st.plotly_chart(fig)
+    _chart(fig)
     where = ("below" if v["last_traded"] and v["last_traded"] < v["range_lo"] else
              "above" if v["last_traded"] and v["last_traded"] > v["range_hi"] else "within")
     html(f'<div class="nv-notice">If implied volatility moves as forecast, this contract\'s fair value range is '
@@ -461,7 +479,7 @@ elif page == "History":
     fig.update_layout(title="At-the-money implied volatility (%)", height=420, hovermode="x unified",
                       legend=dict(orientation="h", y=1.1, x=1, xanchor="right"), **LAYOUT)
     fig.update_xaxes(rangeslider=dict(visible=True, thickness=0.06))
-    st.plotly_chart(fig)
+    _chart(fig)
     c1, c2 = st.columns(2, gap="large")
     for box, col, colr, ttl in zip((c1, c2), ["Skew 30d (-5% minus +5%)", "Term slope (91d minus 7d)"], [AMBER, SKY],
                                    ["Downside skew (vol points)", "Term slope, 91-day minus 7-day (vol points)"]):
@@ -506,7 +524,7 @@ elif page == "Track record":
     fig.update_layout(title="30-day ATM volatility: forecast vs actual (%)", height=400, hovermode="x unified",
                       legend=dict(orientation="h", y=-0.2), **LAYOUT)
     fig.update_xaxes(rangeslider=dict(visible=True, thickness=0.06))
-    st.plotly_chart(fig)
+    _chart(fig)
     st.markdown(f"**Error by year, {HL} horizon**")
     st.dataframe(dd.track_by_year(d, h)[order].rename(columns={dd.BLEND: "NeuraVol", "No change": "No-change benchmark"})
                  .style.format("{:.2f}").highlight_min(axis=1, color=HILITE))
@@ -613,3 +631,15 @@ else:
         Direction of meaningful moves called correctly 57-60% of the time. See <b>Track record</b> for full detail,
         including where the model did not beat simple benchmarks.</div></div>""")
         html(f'<div class="nv-notice">{DISCLAIMER}</div>')
+
+_mark('page done')
+try:
+    _dbg = st.query_params.get("debug")
+except Exception:
+    _dbg = None
+_line = " | ".join(f"{n} {t:.2f}s" for n, t in _MARKS)
+print(f"[timing] page={st.session_state.get('page')} {_line}", flush=True)
+if _dbg:
+    import sys, plotly, scipy
+    st.code(f"python {sys.version.split()[0]} streamlit {st.__version__} pandas {pd.__version__} numpy {np.__version__} "
+            f"plotly {getattr(plotly, '__version__', '?')} scipy {scipy.__version__}\n" + "\n".join(f"{t:7.2f}s  {n}" for n, t in _MARKS))
