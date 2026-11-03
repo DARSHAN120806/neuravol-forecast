@@ -38,6 +38,11 @@ def _apply_upstox_secret():
     return sync.upstox_token()
 
 
+def _table(df, fmt=None):
+    from ui_table import html_table
+    st.markdown(html_table(df, fmt, index=False), unsafe_allow_html=True)
+
+
 def _status(label):
     s = getattr(st, "status", None)
     return s(label, expanded=True) if s else st.container()
@@ -174,7 +179,7 @@ def render(d, html, kpi_row, kpi, colors):
         show = health.sort_values("date", ascending=False).rename(columns={
             "n_slices": "expiries", "n_points": "quotes", "fit_error_pts": "fit error (pts)"})
         show["date"] = pd.to_datetime(show["date"]).dt.strftime("%d %b %Y")
-        st.dataframe(show.style.format({"fit error (pts)": "{:.2f}", "coverage": "{:.0%}"}), hide_index=True)
+        _table(show, {"fit error (pts)": "{:.2f}", "coverage": "{:.0%}"})
         if gaps:
             st.caption("Weekdays with no stored session in the last 90 days: "
                        + ", ".join(f"{g:%d %b}" for g in gaps) + ". Market holidays appear here too.")
@@ -195,8 +200,9 @@ def render(d, html, kpi_row, kpi, colors):
                 near = snap[snap.expiry == sorted(snap.expiry.unique())[min(2, snap.expiry.nunique() - 1)]]
                 near = near.iloc[(near.strike - s0).abs().argsort()[:8]].sort_values(["strike", "option_type"])
                 near["spread %"] = (near.ask - near.bid) / ((near.ask + near.bid) / 2) * 100
-                st.dataframe(near[["expiry", "strike", "option_type", "ltp", "bid", "ask", "spread %", "volume", "oi"]]
-                             .round(2), hide_index=True)
+                _table(near[["expiry", "strike", "option_type", "ltp", "bid", "ask", "spread %", "volume", "oi"]],
+                       {"ltp": "{:.2f}", "bid": "{:.2f}", "ask": "{:.2f}", "spread %": "{:.2f}", "strike": "{:,.0f}",
+                        "volume": "{:,.0f}", "oi": "{:,.0f}"})
             except Exception as e:
                 st.error(f"Snapshot failed: {e}")
         if live:
@@ -205,7 +211,7 @@ def render(d, html, kpi_row, kpi, colors):
                 df = pd.read_csv(f, usecols=["ts"])
                 rows.append(dict(day=f.stem, snapshots=df.ts.nunique(), first=df.ts.min()[11:16], last=df.ts.max()[11:16],
                                  rows=len(df)))
-            st.dataframe(pd.DataFrame(rows), hide_index=True)
+            _table(pd.DataFrame(rows))
         if st.button("Build mid-price surfaces from snapshots", disabled=not live):
             from collector import build_mid_surface
             box = _status("Building mid-price surfaces...")
@@ -222,8 +228,7 @@ def render(d, html, kpi_row, kpi, colors):
                ("Upstox analytics token", bool(token), "fallback data source and live snapshots"),
                ("GitHub token", bool(secret("GITHUB_TOKEN")), "saves synced data permanently"),
                ("GitHub repository", True, secret("GITHUB_REPO", "DARSHAN120806/neuravol-forecast"))]
-        st.dataframe(pd.DataFrame([dict(setting=a, status="configured" if b else "missing", purpose=c) for a, b, c in cfg]),
-                     hide_index=True)
+        _table(pd.DataFrame([dict(setting=a, status="configured" if b else "missing", purpose=c) for a, b, c in cfg]))
         b1, b2, b3 = st.columns(3)
         if b1.button("Test NSE", use_container_width=True):
             ok, msg = sync.nse_reachable()
@@ -256,7 +261,7 @@ def render(d, html, kpi_row, kpi, colors):
                                             use_container_width=True)
         st.markdown("**Sync history**")
         if len(hist):
-            st.dataframe(hist.iloc[::-1].drop(columns=["sources"], errors="ignore"), hide_index=True)
+            _table(hist.iloc[::-1].drop(columns=["sources"], errors="ignore"), {"seconds": "{:.1f}"})
         else:
             st.caption("No syncs recorded yet.")
 

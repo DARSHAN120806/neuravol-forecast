@@ -18,6 +18,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 import dashboard_data as dd
+from ui_table import CSS as TABLE_CSS, html_table
 from src.pricing import black76
 _mark('imports')
 
@@ -126,6 +127,7 @@ h2, h3 {{ color: {INK}; font-weight: 600; letter-spacing: -0.01em; }}
 .stTabs [data-baseweb="tab-list"] {{ gap: 6px; }}
 .stTabs [data-baseweb="tab"] {{ background: {CARD}; border: 1px solid {LINE}; border-radius: 10px; padding: 6px 14px; }}
 .stTabs [aria-selected="true"] {{ background: {VIOLET_SOFT}; border-color: {VIOLET}; }}
+{TABLE_CSS}
 </style>
 """, unsafe_allow_html=True)
 
@@ -510,9 +512,9 @@ elif page == "Track record":
     ]))
     c1, c2 = st.columns(2, gap="large")
     c1.markdown("**All test days** · error in vol points")
-    c1.dataframe(fmt(t_all).style.format("{:.2f}").highlight_min(axis=1, color=HILITE))
+    c1.markdown(html_table(fmt(t_all), "{:.2f}", highlight_min=True), unsafe_allow_html=True)
     c2.markdown("**Excluding the Feb-Jun 2020 crash**")
-    c2.dataframe(fmt(t_calm).style.format("{:.2f}").highlight_min(axis=1, color=HILITE))
+    c2.markdown(html_table(fmt(t_calm), "{:.2f}", highlight_min=True), unsafe_allow_html=True)
     sig = d.significance.get(str(h), {})
     p_rw = sig.get("NN v2 shrunk + PCA-VAR avg vs No change", [np.nan, np.nan])[1]
     html(f'<div class="nv-notice"><b>Assessment ({HL}):</b> NeuraVol has the lowest error of the models tested. A '
@@ -527,15 +529,16 @@ elif page == "Track record":
     fig.update_xaxes(rangeslider=dict(visible=True, thickness=0.06))
     _chart(fig)
     st.markdown(f"**Error by year, {HL} horizon**")
-    st.dataframe(dd.track_by_year(d, h)[order].rename(columns={dd.BLEND: "NeuraVol", "No change": "No-change benchmark"})
-                 .style.format("{:.2f}").highlight_min(axis=1, color=HILITE))
+    html(html_table(dd.track_by_year(d, h)[order].rename(columns={dd.BLEND: "NeuraVol", "No change": "No-change benchmark"}),
+                    "{:.2f}", highlight_min=True))
     st.subheader("Trading backtest")
     st.caption("Delta-hedged at-the-money straddles traded on the forecast signal, 0.3% cost per option trade, 2020-2026. "
                "Includes an oracle with perfect foresight as an upper bound.")
     bt = d.bt_summary.rename(columns={"hold_days": "hold (days)", "hit_rate": "hit rate", "sharpe_annualised": "Sharpe",
                                       "total_pnl_volpts": "total P&L (vol pts)", "max_drawdown_volpts": "max drawdown"})
-    st.dataframe(bt[["hold (days)", "strategy", "trades", "hit rate", "Sharpe", "total P&L (vol pts)", "max drawdown"]].round(2),
-                 hide_index=True)
+    html(html_table(bt[["hold (days)", "strategy", "trades", "hit rate", "Sharpe", "total P&L (vol pts)", "max drawdown"]],
+                    {"hit rate": "{:.2f}", "Sharpe": "{:.2f}", "total P&L (vol pts)": "{:.2f}", "max drawdown": "{:.2f}"},
+                    index=False))
     html('<div class="nv-notice"><b>Result:</b> forecasts are more accurate than the benchmarks, but the edge does not '
          'survive trading costs in this strategy; systematically selling volatility performed better.</div>')
     live = dd.live_track_record(d)
@@ -543,7 +546,8 @@ elif page == "Track record":
     if live.empty:
         st.caption("Forecasts are logged every trading day and scored here as their target dates arrive.")
     else:
-        st.dataframe(live.pivot_table(index="horizon_days", columns="model", values="rmse", aggfunc="mean").round(2))
+        html(html_table(live.pivot_table(index="horizon_days", columns="model", values="rmse", aggfunc="mean"), "{:.2f}",
+                        highlight_min=True))
 
 # ================================================================== ADMIN
 elif page == "Admin":
