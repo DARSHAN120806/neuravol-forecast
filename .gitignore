@@ -9,3 +9,4 @@ reports/nn/
 secrets/
 data/live/
 logs/
+.streamlit/secrets.toml

@@ -44,10 +44,10 @@ def pick_snapshot(df, hhmm):
     return df[ts == best], best
 
 
-def main():
+def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--time", default="15:25")
-    a = ap.parse_args()
+    a = ap.parse_args(argv)
     OUT.mkdir(parents=True, exist_ok=True)
     gpath = OUT / f"{C.SYMBOL}_grid_mid.npz"
     if gpath.exists():

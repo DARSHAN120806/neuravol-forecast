@@ -13,6 +13,12 @@ streamlit run app.py
 ```
 Deployment: see [DEPLOY.md](DEPLOY.md). Automatic daily NSE updates (laptop, VPS, n8n): see [scheduler/README.md](scheduler/README.md).
 
+## Admin panel
+
+A password-protected **Admin** page syncs the data to the current date with one click (NSE bhavcopy, with an Upstox
+live-quote fallback), refreshes the forecast, checks data quality, tests connections, takes live snapshots, offers CSV
+downloads and can commit the updated data back to GitHub so the hosted site redeploys. Setup: see `DEPLOY.md`.
+
 ## Pipeline
 
 | Step | Command | Output |

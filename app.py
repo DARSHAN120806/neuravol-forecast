@@ -174,7 +174,8 @@ def heatmap(df, title, colorscale, zmid=None, fmt=".1f", zmin=None, zmax=None, h
 # ------------------------------------------------------------------ sidebar
 PAGES = [("Overview", ":material/space_dashboard:"), ("Volatility surface", ":material/ssid_chart:"),
          ("Strike explorer", ":material/tune:"), ("History", ":material/timeline:"),
-         ("Track record", ":material/verified:"), ("User guide", ":material/menu_book:")]
+         ("Track record", ":material/verified:"), ("User guide", ":material/menu_book:"),
+         ("Admin", ":material/admin_panel_settings:")]
 if st.session_state.get("page") not in [p for p, _ in PAGES]:
     st.session_state["page"] = PAGES[0][0]
 if st.session_state.get("h") not in dd.HORIZONS:
@@ -368,7 +369,10 @@ elif page == "Volatility surface":
     lim = max(0.5, float(np.nanmax(np.abs(delta * 100))))
     st.plotly_chart(heatmap(dd.grid_frame(d, delta), f"Expected change over {HL} (vol points · pink = rise, blue = fall)",
                             DIV, zmid=0, fmt=".2f", zmin=-lim, zmax=lim, height=380))
-    st.caption("Forecast: NeuraVol model (neural network combined with a factor model). The shaded range reflects typical "
+    nn_ok = d.forecast["iv_nn"].notna().any() if "iv_nn" in d.forecast else True
+    method = ("NeuraVol model (neural network combined with a factor model)" if nn_ok else
+              "factor model only for this date (the neural model was not available when this forecast was made)")
+    st.caption(f"Forecast: {method}. The shaded range reflects typical "
                "out-of-sample error in normal markets; during crises errors were two to four times larger.")
 
 # ================================================================== STRIKE EXPLORER
@@ -521,6 +525,11 @@ elif page == "Track record":
         st.caption("Forecasts are logged every trading day and scored here as their target dates arrive.")
     else:
         st.dataframe(live.pivot_table(index="horizon_days", columns="model", values="rmse", aggfunc="mean").round(2))
+
+# ================================================================== ADMIN
+elif page == "Admin":
+    import admin_page
+    admin_page.render(d, html, kpi_row, kpi, dict(VIOLET=VIOLET, TEAL=TEAL, CORAL=CORAL, AMBER=AMBER, SKY=SKY))
 
 # ================================================================== USER GUIDE
 else:

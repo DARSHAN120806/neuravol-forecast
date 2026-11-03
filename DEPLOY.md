@@ -29,7 +29,36 @@ Opens at http://localhost:8501.
 
 1. Go to share.streamlit.io and sign in with GitHub.
 2. "Create app" -> pick the repository, branch `main`, main file `app.py`.
-3. Deploy. You get a public link like `https://neuravol.streamlit.app` for your CV.
+3. Under "Advanced settings" -> Secrets, paste the secrets below (or add them later in App settings -> Secrets).
+4. Deploy. You get a public link like `https://neuravol.streamlit.app` for your CV.
+
+### Secrets (admin panel)
+
+```toml
+ADMIN_PASSWORD = "choose-a-long-password"        # unlocks the Admin page
+UPSTOX_ANALYTICS_TOKEN = "..."                   # optional: live quotes + fallback when NSE blocks the server
+GITHUB_TOKEN = "github_pat_..."                  # optional: fine-grained token, this repo only, Contents: Read and write
+GITHUB_REPO = "DARSHAN120806/neuravol-forecast"
+```
+
+On the laptop the same lines go in `.streamlit/secrets.toml` (git-ignored; see `.streamlit/secrets.toml.example`).
+Never commit real secrets.
+
+## Admin panel
+
+Open **Admin** in the sidebar and sign in with `ADMIN_PASSWORD`.
+
+| Tab | What it does |
+|---|---|
+| Sync | Downloads every missing session up to today from NSE (Upstox bid/ask fallback for the latest session), rebuilds surfaces, refreshes the forecast, optionally commits the data to GitHub |
+| Data health | Fit error, quote count and grid coverage for recent sessions, flags bad days, lists missing weekdays |
+| Live quotes | Takes an Upstox option-chain snapshot now and builds mid-price surfaces |
+| Connections | Shows which secrets are configured; tests NSE, Upstox and GitHub |
+| Downloads & history | CSV downloads (forecast, surfaces, option chain) and the sync log |
+| Maintenance | Reload data, recompute the forecast, undo the last stored session |
+
+Streamlit Cloud has no persistent disk: data synced there is lost on restart unless "Save to GitHub" is ticked
+(needs `GITHUB_TOKEN`). The commit also triggers a redeploy, so everyone sees the new data.
 
 ## 4. Daily updates
 
@@ -38,7 +67,7 @@ on weekdays and commits the new surface and forecast; Streamlit Cloud redeploys 
 Enable it under the repo's Actions tab. You can also trigger it by hand ("Run workflow").
 Note: NSE sometimes blocks requests from cloud servers. If the job logs show `403 blocked`, use option B.
 
-**Option B: your laptop (always works).** Schedule this with Windows Task Scheduler at ~19:45 on weekdays:
+**Option B: your laptop (always works).** Or open the Admin page and press Sync now. Schedule this with Windows Task Scheduler at ~19:45 on weekdays:
 ```
 cd "C:\Users\darsh\OneDrive - Vidyalankar Institute of Technology\NEURAVOLAFORECAST"
 python daily_update.py
