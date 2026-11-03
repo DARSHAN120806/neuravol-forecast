@@ -1,0 +1,17 @@
+{
+  "option_cost_per_side": 0.003,
+  "futures_cost_per_side": 0.0002,
+  "threshold_volpts": 0.25,
+  "setups": {
+    "5": [
+      20,
+      50,
+      30
+    ],
+    "20": [
+      45,
+      80,
+      60
+    ]
+  }
+}

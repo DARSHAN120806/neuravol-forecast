@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+data/raw/
+data/processed/
+Reports-Daily-Multiple/
+nn_outputs*.zip
+reports/nn/
+.ipynb_checkpoints/

@@ -1,0 +1,7 @@
+# Data pipeline + model inference (laptop or GitHub Actions)
+-r requirements.txt
+requests>=2.31
+pyarrow>=14
+matplotlib>=3.8
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch

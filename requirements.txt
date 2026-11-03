@@ -1,0 +1,7 @@
+# Dashboard (this is what Streamlit Community Cloud installs)
+streamlit>=1.35
+plotly>=5.20
+pandas>=2.0
+numpy>=1.26
+scipy>=1.11
+jinja2>=3.1
