@@ -11,7 +11,7 @@ baselines and a delta-hedged options backtest. Includes a Streamlit dashboard an
 pip install -r requirements.txt
 streamlit run app.py
 ```
-Deployment and daily updates: see [DEPLOY.md](DEPLOY.md).
+Deployment: see [DEPLOY.md](DEPLOY.md). Automatic daily NSE updates (laptop, VPS, n8n): see [scheduler/README.md](scheduler/README.md).
 
 ## Pipeline
 
@@ -24,7 +24,7 @@ Deployment and daily updates: see [DEPLOY.md](DEPLOY.md).
 | 5. Neural model (Google Colab, GPU) | `notebooks/NeuraVol_v2_Colab.ipynb` | `models/neuravol_v2.pt`, `reports/nn_v2/` |
 | 6. Trading backtest | `python backtest.py` | `reports/backtest/` |
 | 7. Track record for the app | `python build_track_record.py` | `data/track_record/` |
-| 8. Website | `streamlit run app.py` | see `DEPLOY.md` |
+| 8. Website | `streamlit run app.py` | Today (plain-language summary + ITM/ATM/OTM strike guide), Volatility surface, Strike explorer, History, Track record, Learn |
 | Daily refresh | `python daily_update.py` | new surface + forecast |
 | tests | `python tests/test_pricing.py` | |
 

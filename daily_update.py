@@ -117,8 +117,11 @@ def main():
         write_tables(grid, slices, diag)
     print(f"{added} new day(s); surfaces now end {pd.Timestamp(grid['dates'][-1]).date()}")
     if added and not a.no_forecast:
-        import predict
-        predict.main()
+        try:
+            import predict
+            predict.main()
+        except ImportError as e:   # torch missing: surfaces are saved, forecast skipped
+            print(f"forecast skipped ({e}); install torch: pip install -r requirements-pipeline.txt")
 
 
 if __name__ == "__main__":

@@ -6,3 +6,4 @@ Reports-Daily-Multiple/
 nn_outputs*.zip
 reports/nn/
 .ipynb_checkpoints/
+logs/

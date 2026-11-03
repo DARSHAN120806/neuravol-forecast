@@ -1,0 +1,27 @@
+{
+  "name": "NeuraVol daily update",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [ { "field": "cronExpression", "expression": "45 19 * * 1-5" } ] }
+      },
+      "name": "Weekdays 19:45 IST",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "command": "bash /home/ubuntu/neuravol-forecast/scheduler/vps_daily.sh && tail -n 5 /home/ubuntu/neuravol-forecast/logs/daily_update.log"
+      },
+      "name": "Run daily update",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [260, 0]
+    }
+  ],
+  "connections": {
+    "Weekdays 19:45 IST": { "main": [ [ { "node": "Run daily update", "type": "main", "index": 0 } ] ] }
+  },
+  "settings": { "timezone": "Asia/Kolkata" }
+}

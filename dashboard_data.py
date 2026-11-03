@@ -238,3 +238,109 @@ def live_track_record(d: Data):
             out.append(dict(as_of=as_of, horizon_days=h, target_date=d.dates[i + h], model=name,
                             rmse=float(np.sqrt(np.mean(e ** 2))) if e.size else np.nan))
     return pd.DataFrame(out)
+
+
+# ------------------------------------------------------------------ beginner-friendly summaries
+from scipy.special import ndtr as _ndtr
+
+
+def iv_series_at(d: Data, tenor, k):
+    """IV history (decimals) at a tenor row and any moneyness k (interpolated across the grid columns)."""
+    i, _ = idx(d, tenor, 0)
+    return np.array([np.interp(k, d.mon, d.iv[t, i]) for t in range(len(d.dates))])
+
+
+def percentile_now(series, lookback=252):
+    s = np.asarray(series)[-lookback:]
+    return float((s < s[-1]).mean() * 100)
+
+
+def pricing_label(pct):
+    if pct < 25:
+        return "Cheaper than usual", "low"
+    if pct > 75:
+        return "Pricier than usual", "high"
+    return "Around usual", "mid"
+
+
+def market_mood(d: Data):
+    s = iv_series_at(d, 30, 0.0)
+    pct = percentile_now(s)
+    year = s[-252:]
+    if pct < 25:
+        mood, tone = "Calm", "Options are cheaper than on most days of the past year. Markets expect small moves."
+    elif pct <= 75:
+        mood, tone = "Normal", "Option prices are in their usual range for the past year."
+    elif pct < 90:
+        mood, tone = "Elevated", "Options are pricier than usual. Traders expect bigger moves than normal."
+    else:
+        mood, tone = "High fear", "Options are among the most expensive of the past year. Traders are bracing for large moves."
+    return dict(mood=mood, text=tone, pct=pct, now=s[-1] * 100, low=year.min() * 100, high=year.max() * 100,
+                avg=year.mean() * 100)
+
+
+def plain_summary(d: Data, h):
+    """Short plain-English sentences describing today's surface and the forecast."""
+    k = kpis(d, h)
+    hl = {1: "tomorrow", 5: "over the next week", 20: "over the next month"}[h]
+    out = []
+    fc = k["fc_chg"]
+    if abs(fc) < 0.2:
+        out.append(("Forecast", f"The model expects option prices (implied volatility) to stay about the same {hl} "
+                                f"({fc:+.2f} points)."))
+    else:
+        word = "rise" if fc > 0 else "fall"
+        size = "slightly" if abs(fc) < 0.75 else "noticeably"
+        out.append(("Forecast", f"The model expects 30-day implied volatility to {word} {size} {hl}: "
+                                f"{k['atm30']:.2f}% now, about {k['fc_atm30']:.2f}% expected ({fc:+.2f} points)."))
+    skew_hist = iv_series_at(d, 30, -0.05) - iv_series_at(d, 30, 0.05)
+    sp = percentile_now(skew_hist)
+    rel = "more than usual" if sp > 75 else "less than usual" if sp < 25 else "about as usual"
+    out.append(("Crash protection", f"Puts 5% below the market cost {k['skew30']:.1f} vol points more than calls 5% above it, "
+                                    f"{rel}. This is how much traders pay to protect against a fall."))
+    if k["term"] < -1:
+        out.append(("Short vs long term", f"Short-term options are pricier than long-term ones ({k['term']:+.1f} points). "
+                                          "That usually means traders expect something soon (an event or a sharp move)."))
+    else:
+        out.append(("Short vs long term", f"Short-term and long-term options are priced normally relative to each other "
+                                          f"({k['term']:+.1f} points); no near-term stress signal."))
+    return out
+
+
+def guide_expiry(d: Data, target_days=30):
+    ex = expiries(d)
+    ex = ex[ex.days >= 14]
+    return ex.iloc[int(np.argmin(np.abs(ex.days.values - target_days)))]
+
+
+def strike_guide(d: Data, h, row=None):
+    """ITM / ATM / OTM examples for calls and puts on one expiry, with plain-language facts."""
+    row = guide_expiry(d) if row is None else row
+    F, T = float(row.F), float(row["T"])
+    dfac = np.exp(-row.rate * T)
+    rnd = lambda x: int(round(x / 50) * 50)
+    zones = [("Call", "ITM", rnd(F * 0.97)), ("Call", "ATM", rnd(F)), ("Call", "OTM", rnd(F * 1.03)),
+             ("Put", "OTM", rnd(F * 0.97)), ("Put", "ATM", rnd(F)), ("Put", "ITM", rnd(F * 1.03))]
+    what = {
+        ("Call", "ITM"): "Already in profit at expiry prices; costs more, moves almost like NIFTY itself.",
+        ("Call", "ATM"): "Strike at the market; most sensitive to volatility changes and loses the most value per day.",
+        ("Call", "OTM"): "Cheapest; pays off only if NIFTY rises past the strike, otherwise expires worthless.",
+        ("Put", "ITM"): "Already in profit at expiry prices; costs more, moves almost opposite to NIFTY.",
+        ("Put", "ATM"): "Strike at the market; most sensitive to volatility changes and loses the most value per day.",
+        ("Put", "OTM"): "Cheapest; pays off only if NIFTY falls below the strike. Used as crash insurance.",
+    }
+    rows = []
+    for typ, zone, K in zones:
+        call = typ == "Call"
+        v = strike_view(d, row, float(K), call, h)
+        sig = v["iv_now"] / 100
+        d1 = (np.log(F / K) + 0.5 * sig ** 2 * T) / (sig * np.sqrt(T))
+        d2 = d1 - sig * np.sqrt(T)
+        prob = _ndtr(d2) if call else _ndtr(-d2)
+        delta = dfac * (_ndtr(d1) if call else _ndtr(d1) - 1)
+        pct = percentile_now(iv_series_at(d, 30, np.log(K / F)))
+        label, level = pricing_label(pct)
+        rows.append(dict(type=typ, zone=zone, strike=K, premium=v["model_price_now"], last_traded=v["last_traded"],
+                         iv=v["iv_now"], iv_pct=pct, pricing=label, pricing_level=level, iv_change=v["change"],
+                         prob_itm=prob * 100, delta=delta, what=what[(typ, zone)]))
+    return row, pd.DataFrame(rows)
