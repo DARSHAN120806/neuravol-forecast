@@ -24,7 +24,7 @@ Deployment: see [DEPLOY.md](DEPLOY.md). Automatic daily NSE updates (laptop, VPS
 | 5. Neural model (Google Colab, GPU) | `notebooks/NeuraVol_v2_Colab.ipynb` | `models/neuravol_v2.pt`, `reports/nn_v2/` |
 | 6. Trading backtest | `python backtest.py` | `reports/backtest/` |
 | 7. Track record for the app | `python build_track_record.py` | `data/track_record/` |
-| 8. Website | `streamlit run app.py` | Today (plain-language summary + ITM/ATM/OTM strike guide), Volatility surface, Strike explorer, History, Track record, Learn |
+| 8. Website | `streamlit run app.py` | Overview (volatility regime, ITM/ATM/OTM strike guide, payoff scenarios), Volatility surface, Strike explorer (what-if analysis), History, Track record, User guide |
 | Daily refresh | `python daily_update.py` | new surface + forecast |
 | tests | `python tests/test_pricing.py` | |
 

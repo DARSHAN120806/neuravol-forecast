@@ -268,42 +268,46 @@ def market_mood(d: Data):
     pct = percentile_now(s)
     year = s[-252:]
     if pct < 25:
-        mood, tone = "Calm", "Options are cheaper than on most days of the past year. Markets expect small moves."
+        mood, tone = "Calm", "Option prices are below most of the past year. The market is pricing small moves."
     elif pct <= 75:
-        mood, tone = "Normal", "Option prices are in their usual range for the past year."
+        mood, tone = "Normal", "Option prices are within their usual one-year range."
     elif pct < 90:
-        mood, tone = "Elevated", "Options are pricier than usual. Traders expect bigger moves than normal."
+        mood, tone = "Elevated", "Option prices are above their usual range. The market is pricing larger moves than normal."
     else:
-        mood, tone = "High fear", "Options are among the most expensive of the past year. Traders are bracing for large moves."
+        mood, tone = "High fear", "Option prices are near one-year highs. The market is pricing large moves."
     return dict(mood=mood, text=tone, pct=pct, now=s[-1] * 100, low=year.min() * 100, high=year.max() * 100,
                 avg=year.mean() * 100)
 
 
 def plain_summary(d: Data, h):
-    """Short plain-English sentences describing today's surface and the forecast."""
+    """Short professional sentences describing today's surface and the forecast."""
     k = kpis(d, h)
-    hl = {1: "tomorrow", 5: "over the next week", 20: "over the next month"}[h]
+    hl = {1: "by the next session", 5: "over the next week", 20: "over the next month"}[h]
     out = []
     fc = k["fc_chg"]
     if abs(fc) < 0.2:
-        out.append(("Forecast", f"The model expects option prices (implied volatility) to stay about the same {hl} "
-                                f"({fc:+.2f} points)."))
+        out.append(("Forecast", f"30-day implied volatility is expected to hold broadly steady {hl} "
+                                f"({k['atm30']:.2f}% now, {fc:+.2f} pts)."))
     else:
-        word = "rise" if fc > 0 else "fall"
-        size = "slightly" if abs(fc) < 0.75 else "noticeably"
-        out.append(("Forecast", f"The model expects 30-day implied volatility to {word} {size} {hl}: "
-                                f"{k['atm30']:.2f}% now, about {k['fc_atm30']:.2f}% expected ({fc:+.2f} points)."))
+        word = "rise" if fc > 0 else "ease"
+        size = "slightly" if abs(fc) < 0.75 else "materially"
+        out.append(("Forecast", f"30-day implied volatility is forecast to {word} {size} {hl}, from {k['atm30']:.2f}% "
+                                f"to about {k['fc_atm30']:.2f}% ({fc:+.2f} pts)."))
     skew_hist = iv_series_at(d, 30, -0.05) - iv_series_at(d, 30, 0.05)
     sp = percentile_now(skew_hist)
-    rel = "more than usual" if sp > 75 else "less than usual" if sp < 25 else "about as usual"
-    out.append(("Crash protection", f"Puts 5% below the market cost {k['skew30']:.1f} vol points more than calls 5% above it, "
-                                    f"{rel}. This is how much traders pay to protect against a fall."))
-    if k["term"] < -1:
-        out.append(("Short vs long term", f"Short-term options are pricier than long-term ones ({k['term']:+.1f} points). "
-                                          "That usually means traders expect something soon (an event or a sharp move)."))
+    if sp > 75:
+        tail = "above its one-year norm, indicating firm demand for downside protection."
+    elif sp < 25:
+        tail = "below its one-year norm, indicating light demand for downside protection."
     else:
-        out.append(("Short vs long term", f"Short-term and long-term options are priced normally relative to each other "
-                                          f"({k['term']:+.1f} points); no near-term stress signal."))
+        tail = "in line with its one-year norm."
+    out.append(("Crash protection", f"5% out-of-the-money puts trade {k['skew30']:.1f} vol points above equivalent calls, {tail}"))
+    if k["term"] < -1:
+        out.append(("Short vs long term", f"Short-dated volatility is above long-dated ({k['term']:+.1f} pts), typically a "
+                                          "sign of near-term event risk."))
+    else:
+        out.append(("Short vs long term", f"Short- and long-dated volatility are in normal alignment ({k['term']:+.1f} pts); "
+                                          "no near-term stress signal."))
     return out
 
 
@@ -322,12 +326,12 @@ def strike_guide(d: Data, h, row=None):
     zones = [("Call", "ITM", rnd(F * 0.97)), ("Call", "ATM", rnd(F)), ("Call", "OTM", rnd(F * 1.03)),
              ("Put", "OTM", rnd(F * 0.97)), ("Put", "ATM", rnd(F)), ("Put", "ITM", rnd(F * 1.03))]
     what = {
-        ("Call", "ITM"): "Already in profit at expiry prices; costs more, moves almost like NIFTY itself.",
-        ("Call", "ATM"): "Strike at the market; most sensitive to volatility changes and loses the most value per day.",
-        ("Call", "OTM"): "Cheapest; pays off only if NIFTY rises past the strike, otherwise expires worthless.",
-        ("Put", "ITM"): "Already in profit at expiry prices; costs more, moves almost opposite to NIFTY.",
-        ("Put", "ATM"): "Strike at the market; most sensitive to volatility changes and loses the most value per day.",
-        ("Put", "OTM"): "Cheapest; pays off only if NIFTY falls below the strike. Used as crash insurance.",
+        ("Call", "ITM"): "Carries intrinsic value; higher premium, moves closely with NIFTY.",
+        ("Call", "ATM"): "Strike near the market; most sensitive to volatility and to daily time decay.",
+        ("Call", "OTM"): "Lowest premium; pays off only if NIFTY rises above the strike before expiry.",
+        ("Put", "ITM"): "Carries intrinsic value; higher premium, moves inversely with NIFTY.",
+        ("Put", "ATM"): "Strike near the market; most sensitive to volatility and to daily time decay.",
+        ("Put", "OTM"): "Lowest premium; pays off only if NIFTY falls below the strike. Commonly used as downside protection.",
     }
     rows = []
     for typ, zone, K in zones:
