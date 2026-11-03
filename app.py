@@ -50,6 +50,7 @@ H_NAMES = {1: "1 day", 5: "1 week", 20: "1 month"}
 st.markdown(f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0..1,0&display=block');
 html, body, .stApp, .stApp *:not([data-testid="stIconMaterial"]):not([class*="material"]) {{ font-family: 'Poppins', sans-serif; }}
 .stApp {{ background: {BG}; color: {INK}; }}
 header[data-testid="stHeader"] {{ background: transparent; }}
