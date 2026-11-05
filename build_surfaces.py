@@ -2,7 +2,6 @@
 
     python build_surfaces.py                 # all days, NIFTY
     python build_surfaces.py --symbol BANKNIFTY
-    python build_surfaces.py --symbol FINNIFTY       # reads data/processed/fo_FINNIFTY.*
     python build_surfaces.py --start 2020-01-01 --end 2020-12-31
 
 Input : data/processed/fo_index.parquet (from download_bhavcopy.py)

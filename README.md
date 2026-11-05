@@ -69,18 +69,4 @@ predicts the change of every factor at all three horizons at once. Training uses
 plus a calendar no-arbitrage penalty; a 5-seed ensemble's prediction is shrunk toward "no change" by a factor chosen on
 validation data, and the published forecast averages it with a PCA-VAR model.
 
-## v3 (in progress): one model across NIFTY, BANKNIFTY and FINNIFTY
-
-`notebooks/NeuraVol_v3_Colab.ipynb` trains a single shared model on several indices (index one-hot input, shared
-factor basis, per-index shrinkage) and compares training sets on validation data: NIFTY only, NIFTY + BANKNIFTY, all three.
-
-| Index | Daily surfaces | Period | Note |
-|---|---|---|---|
-| NIFTY | 2,672 | 2016-2026 | reference |
-| BANKNIFTY | 2,640 | 2016-2026 | good quality; fewer expiries since weekly contracts ended (Nov 2024) |
-| FINNIFTY | 339 | mostly 2023-24 | thin trading in 2021-22; one liquid expiry per day after Nov 2024 |
-
-Extra index data: `python scripts/extract_symbols.py --symbols FINNIFTY --since 2021-01-01` (resumable), then
-`python build_surfaces.py --symbol FINNIFTY`. `--append` builds only days newer than the saved surfaces.
-
 *Research and education only. Not investment advice and not buy/sell recommendations.*
