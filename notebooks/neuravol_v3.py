@@ -48,7 +48,11 @@ V2_REFERENCE = {   # NIFTY RMSE (vol points) of v2 from its own walk-forward run
 import os, json, time
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+try:
+    import matplotlib.pyplot as plt
+except Exception as e:  # plots are optional
+    plt = None
+    print("matplotlib unavailable, plots skipped:", e)
 from scipy.stats import norm
 
 try:
@@ -494,7 +498,7 @@ def walk_forward(sids, label):
             pred[sid][sel] = np.exp(LOGIV[test][:, None, :] + dl.cpu().numpy() * alpha[sid][None, :, None])
         print(f"[{label}] {y}: train {len(train)} {np.bincount(SID[train], minlength=NI)} | val {len(val)} | "
               f"factors {prep['fac']['explained']:.1%} | epochs {[f[1] for f in fits]} | NIFTY val rel-RMSE "
-              f"{val_scores[-1]:.3f} | alpha NIFTY {dict(zip(HORIZONS, alpha[0]))} | {time.time() - t0:.0f}s")
+              f"{val_scores[-1]:.3f} | alpha NIFTY {dict(zip(HORIZONS, alpha[0].tolist()))} | {time.time() - t0:.0f}s")
     return dict(origins=origins, pred=pred, val=float(np.mean(val_scores)), alpha=alpha_log)
 
 
@@ -541,7 +545,7 @@ for sid in CONFIGS[MAIN]:
             store[f"{name}_h{h}_{k}"] = v
         print(f"\n=== {name}, {h}-day horizon: RMSE in vol points, {len(RUNS[MAIN]['origins'][sid])} forecasts ===")
         show = tab.loc[["overall", "excl. COVID crash", "7d", "30d", "91d", "put wing", "near ATM", "call wing"]]
-        if name == "NIFTY":
+        if name == "NIFTY" and TEST_YEARS == list(range(2020, 2027)):   # v2 numbers cover 2020-2026 only
             show = show.copy()
             for k, v in V2_REFERENCE[h].items():
                 show.loc["overall", f"[{k}]"] = v
@@ -552,10 +556,11 @@ for sid in CONFIGS[MAIN]:
 
 # %%
 nifty = pd.DataFrame({f"{h}d": results[("NIFTY", h)]["table"].loc["overall"] for h in HORIZONS}).T
-fig, ax = plt.subplots(figsize=(12, 4))
-nifty.plot.bar(ax=ax, rot=0, title="NIFTY forecast error by training set (walk-forward 2020-2026)")
-ax.set_ylabel("RMSE, vol points"); ax.legend(fontsize=8)
-plt.tight_layout(); plt.savefig(os.path.join(OUT_DIR, "v3_nifty_rmse.png"), dpi=130); plt.show()
+if plt is not None:
+    fig, ax = plt.subplots(figsize=(12, 4))
+    nifty.plot.bar(ax=ax, rot=0, title="NIFTY forecast error by training set (walk-forward 2020-2026)")
+    ax.set_ylabel("RMSE, vol points"); ax.legend(fontsize=8)
+    plt.tight_layout(); plt.savefig(os.path.join(OUT_DIR, "v3_nifty_rmse.png"), dpi=130); plt.show()
 print(nifty.round(3).to_string())
 
 with open(os.path.join(OUT_DIR, "nn_v3_results.json"), "w") as f:
@@ -606,7 +611,7 @@ torch.save({"version": 3, "indices": [INDICES[s] for s in sids], "all_indices": 
             "alpha": {INDICES[k]: v.tolist() for k, v in alpha.items()},
             "state_dicts": [{k: v.cpu() for k, v in m.state_dict().items()} for m in models]},
            os.path.join(OUT_DIR, "neuravol_v3.pt"))
-print("final alphas:", {INDICES[k]: dict(zip(HORIZONS, v)) for k, v in alpha.items()})
+print("final alphas:", {INDICES[k]: dict(zip(HORIZONS, v.tolist())) for k, v in alpha.items()})
 print(fc_df[fc_df.moneyness == 0].round(4).to_string(index=False))
 
 # %%
